@@ -1,0 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap');
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Lato', sans-serif;;
+}
+
+body {
+    height: 100vh;
+    width: 100%;
+    background: #232b31;
+}
+
+.wrapper {
+    margin: 120px auto;
+    max-width: 400px;
+    width: 100%;
+    background: #CCADA6;
+    border-radius: 5px;
+    padding: 25px;
+    box-shadow: 5px 5px 10px black;
+}
+
+.wrapper header {
+    font-size: 30px;
+    font-weight: 600;
+    text-align: center;
+    color: #232b31;
+}
+
+.wrapper .input-field {
+    display: flex;
+    height: 45px;
+    width: 100%;
+    margin: 20px 0;
+}
+
+.input-field input {
+    width: 85%;
+    height: 100%;
+    border: 1px solid #ccc;
+    font-size: 17px;
+    border-radius: 3px;
+    padding-left: 15px;
+    outline: none;
+}
+
+.input-field button {
+    width: 60px;
+    height: 100%;
+    border: none;
+    outline: none;
+    background: #232b31;
+    color: #A9CBCD;
+    font-size: 22px;
+    cursor: pointer;
+    border-radius: 3px;
+    margin-left: 5px;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.input-field button.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.input-field button:hover {
+    background: #2d373d
+}
+
+.wrapper .todo-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.todo-list li {
+    list-style: none;
+    height: 45px;
+    line-height: 45px;
+    position: relative;
+    background: #e6e6e6;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    padding: 0 15px;
+    cursor: default;
+    overflow: hidden;
+}
+
+.todo-list li button {
+    position: absolute;
+    right: -45px;
+    border: none;
+    outline: none;
+    color: #A9CBCD;
+    height: 100%;
+    width: 45px;
+    text-align: center;
+    background: #E05F5F;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.3s ease;
+}
+
+.todo-list li:hover button {
+    right: 0px;
+}
+
+.wrapper .footer {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    margin-top: 20px;
+    justify-content: space-between;
+}
+
+.footer button {
+    border: none;
+    outline: none;
+    background: #232b31;
+    color: #A9CBCD;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 6px 10px;
+}
+
+.footer button:hover {
+    background: #2d373d
+}
+
+.form-input {
+    width: 100%;
+    display: flex;
+}

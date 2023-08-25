@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>TODO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="../static/img/Aha-Soft-Standard-Portfolio-Inventory.ico">
+</head>
+<body>
+    <div class="wrapper">
+        <header>Todo App</header>
+        <div class="input-field">
+            <form id="form_input" class="form-input">
+                <input id="input_field" type="text" placeholder="Add your new todo">
+                <button id="add_button"><i class="fa fa-plus"></i></button>
+            </form>
+        </div>
+        <ul id="todo_list" class="todo-list">
+            {{range .tasks}}
+                <li>{{.Description}}<button id="{{.Id}}" onclick="deleteItem(this.id)"><i class="fa fa-trash"></i></button></li>
+            {{end}}
+        </ul>
+        <div class="footer">
+            {{if .tasksCounter}}
+                <span class="info">You have {{.tasksCounter}} pending tasks.</span>
+            {{else}}
+                <span class="info">No tasks available.</span>
+            {{end}}
+            <button id="clear_all_btn">Clear all</button>
+        </div>
+    </div>
+    <script src="../static/js/index.js"></script>
+</body>
+</html>
