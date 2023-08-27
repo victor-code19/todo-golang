@@ -46,11 +46,11 @@ Access the web interface by navigating to http://localhost:8080/ in your browser
 
 ## Endpoints
 
-* GET /tasks: Fetch all tasks as JSON.
-* POST /tasks: Create a new task.
-* DELETE /tasks/:id: Delete a task by ID.
-* GET /tasks/all: Display all tasks in an HTML template.
-* DELETE /tasks/all: Delete all tasks.
+* GET /tasks - Fetch all tasks as JSON.
+* POST /tasks - Create a new task.
+* DELETE /tasks/:id - Delete a task by ID.
+* GET /tasks/all - Display all tasks in an HTML template.
+* DELETE /tasks/all - Delete all tasks.
 
 ## Demo 
     https://youtu.be/8Tl3OFXLrAo
