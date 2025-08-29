@@ -1,98 +1,163 @@
 package controllers
 
 import (
+	"context"
+	"time"
 	"net/http"
+    "log"
 
 	"example.com/todo-rest-api/models"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
+
+const (
+	defaultTimeout = 5 * time.Second
+	dbName         = "todo-app-go"
+	collectionName = "tasks"
 )
 
 type TaskController struct {
-	session *mgo.Session
+	collection *mongo.Collection
 }
 
-func NewTaskController(s *mgo.Session) *TaskController {
-	return &TaskController{s}
+func NewTaskController(c *mongo.Client) *TaskController {
+	return &TaskController{
+		collection: c.Database(dbName).Collection(collectionName),
+	}
 }
 
-func (uc TaskController) GetTasks(c *gin.Context) {
-	result := []models.Task{}
+func NewTaskControllerWithDB(c *mongo.Client, database string) *TaskController {
+	return &TaskController{
+		collection: c.Database(database).Collection(collectionName),
+	}
+}
 
-	if err := uc.session.DB("todo-app-go").C("tasks").Find(bson.M{}).All(&result); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "Unable to fetch tasks"})
+func (tc TaskController) getContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), defaultTimeout)
+}
+
+func (tc TaskController) GetTasks(c *gin.Context) {
+	ctx, cancel := tc.getContext()
+	defer cancel()
+
+	cursor, err := tc.collection.Find(ctx, bson.M{})
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to fetch tasks"})
 		return
 	}
+	defer cursor.Close(ctx)
 
-	c.JSON(http.StatusOK, result)
+	var tasks []models.Task
+
+	if err = cursor.All(ctx, &tasks); err != nil {
+        log.Println("Error fetching tasks:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Error decoding tasks"})
+        return
+	}
+
+	c.JSON(http.StatusOK, tasks)
 }
 
-func (uc TaskController) CreateTask(c *gin.Context) {
-	newTask := models.Task{}
+func (tc TaskController) CreateTask(c *gin.Context) {
+	ctx, cancel := tc.getContext()
+	defer cancel()
+
+	var newTask models.Task
 
 	if err := c.BindJSON(&newTask); err != nil {
-		return
+        c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid JSON format"})
+        return
+    }
+
+	result, err := tc.collection.InsertOne(ctx, newTask)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to create task"})
+        return
 	}
-
-	newTask.Id = bson.NewObjectId()
-
-	if err := uc.session.DB("todo-app-go").C("tasks").Insert(newTask); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "bad request"})
-	}
-
+	
+	if oid, ok := result.InsertedID.(bson.ObjectID); ok {
+        newTask.Id = oid
+    }
+	
 	c.JSON(http.StatusCreated, newTask)
 
 }
 
-func (uc TaskController) DeleteTask(c *gin.Context) {
+func (tc TaskController) DeleteTask(c *gin.Context) {
+	ctx, cancel := tc.getContext()
+	defer cancel()
+
 	id := c.Param("id")
 
-	if !bson.IsObjectIdHex(id) {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "incorrect id"})
-		return
-	}
+	objectID, err := bson.ObjectIDFromHex(id)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid ID format"})
+        return
+    }
 
-	_id := bson.ObjectIdHex(id)
+	result, err := tc.collection.DeleteOne(ctx, bson.M{"_id": objectID})
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete task"})
+        return
+    }
 
-	if err := uc.session.DB("todo-app-go").C("tasks").RemoveId(_id); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "task not found"})
-		return
-	}
+	if result.DeletedCount == 0 {
+        c.JSON(http.StatusNotFound, gin.H{"message": "Task not found"})
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{"message": "task deleted"})
-
-}
-
-func (uc TaskController) ShowAllTasks(c *gin.Context) {
-	tasks := []models.Task{}
-
-	if err := uc.session.DB("todo-app-go").C("tasks").Find(bson.M{}).All(&tasks); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "unable to fetch tasks"})
-		return
-	}
-
-	viewTasks := []models.ViewTask{}
-
-	for _, element := range tasks {
-		viewTasks = append(viewTasks, models.ViewTask{element.Id.Hex(), element.Description})
-	}
-
-	data := gin.H{
-		"tasks":        viewTasks,
-		"tasksCounter": len(tasks),
-	}
-
-	c.HTML(http.StatusOK, "index.gohtml", data)
+    c.JSON(http.StatusOK, gin.H{"message": "Task deleted successfully"})
 
 }
 
-func (uc TaskController) DeleteAllTasks(c *gin.Context) {
-	if _, err := uc.session.DB("todo-app-go").C("tasks").RemoveAll(bson.M{}); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "tasks not found"})
-		return
-	}
+func (tc TaskController) ShowAllTasks(c *gin.Context) {
+    ctx, cancel := tc.getContext()
+    defer cancel()
 
-	c.JSON(http.StatusOK, gin.H{"message": "All tasks deleted"})
+    cursor, err := tc.collection.Find(ctx, bson.M{})
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to fetch tasks"})
+        return
+    }
+    defer cursor.Close(ctx)
 
+    var tasks []models.Task
+    if err = cursor.All(ctx, &tasks); err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Error decoding tasks"})
+        return
+    }
+
+    viewTasks := make([]models.ViewTask, 0, len(tasks))
+    for _, task := range tasks {
+        viewTasks = append(viewTasks, models.ViewTask{
+            Id:          task.Id.Hex(),
+            Description: task.Description,
+        })
+    }
+
+    data := gin.H{
+        "tasks":        viewTasks,
+        "tasksCounter": len(tasks),
+    }
+
+    c.HTML(http.StatusOK, "index.gohtml", data)
+}
+
+func (tc TaskController) DeleteAllTasks(c *gin.Context) {
+    ctx, cancel := tc.getContext()
+    defer cancel()
+
+    result, err := tc.collection.DeleteMany(ctx, bson.M{})
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"message": "Failed to delete tasks"})
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "message":      "All tasks deleted successfully",
+        "deletedCount": result.DeletedCount,
+    })
 }

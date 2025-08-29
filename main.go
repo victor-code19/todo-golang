@@ -1,17 +1,23 @@
 package main
 
 import (
+	"context"
+	"log"
+	"os"
+	"time"
 	"example.com/todo-rest-api/controllers"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 func main() {
 
 	router := gin.Default()
-	uc := controllers.NewTaskController(getSession())
+	uc := controllers.NewTaskController(getClient())
 
-	router.Static("/static", "./static")
+	router.Static("/static", "./public")
 	router.LoadHTMLGlob("templates/*.gohtml")
 
 	apiRoutes := router.Group("/api")
@@ -27,11 +33,26 @@ func main() {
 	router.Run(":8080")
 }
 
-func getSession() *mgo.Session {
-	s, err := mgo.Dial("mongodb://127.0.0.1:27017")
+func getClient() *mongo.Client {
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal("Set your 'MONGODB_URI' environment variable")
+	}
+	
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		panic(err)
 	}
 
-	return s
+	// Sprawdź połączenie
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatal("Failed to ping MongoDB:", err)
+	}
+	
+	log.Println("Successfully connected to MongoDB!")
+	return client
 }
