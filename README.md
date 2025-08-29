@@ -1,25 +1,24 @@
-
 # 📝 Todo App - Go REST API
 
-![Go](https://img.shields.io/badge/Go-1.17+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Go](https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![Gin](https://img.shields.io/badge/Gin-Framework-00ADD8?style=for-the-badge&logo=go&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
 
-*Basic Todo application built with Go, Gin framework, and MongoDB*
-
-[🚀 Demo](https://youtu.be/8Tl3OFXLrAo) • [📖 Documentation](#api-documentation) • [🛠️ Installation](#installation)
+*A basic Todo application built with Go, Gin framework, and MongoDB featuring both REST API and web interface*
 
 ## ✨ Features
 
 ### 🔧 Backend Features
 - **RESTful API** - Clean and organized REST endpoints
-- **MongoDB Integration** - Persistent data storage with efficient queries
+- **Official MongoDB Driver Integration** - Persistent data storage with efficient queries
 - **Gin Framework** - Fast HTTP web framework with middleware support
 - **JSON API** - Standard JSON responses for all endpoints
-- **Error Handling** - Comprehensive error handling and validation
+- **Error Handling** - Error handling and validation
+- **Context Management** - Proper timeout handling for database operations
 
 ### 🎨 Frontend Features
 - **Interactive UI** - Dynamic web interface with real-time updates
@@ -32,10 +31,12 @@
 
 ```
 todo-golang/
-├── 📁 controllers/          # Business logic and request handlers
-│   └── task.go             # Task controller with CRUD operations
+├── 📁 controllers/         # Business logic and request handlers
+│   ├── task.go             # Task controller with CRUD operations
+│   └── task_test.go        # Controller unit tests
 ├── 📁 models/              # Data models and structures
-│   └── task.go             # Task model definition
+│   ├── task.go             # Task and ViewTask model definitions
+│   └── task_test.go        # Model unit tests
 ├── 📁 public/              # Static assets
 │   ├── 📁 css/
 │   │   └── style.css       # Application styles
@@ -45,10 +46,16 @@ todo-golang/
 │       └── index.js        # Frontend JavaScript logic
 ├── 📁 templates/           # HTML templates
 │   └── index.gohtml        # Main application template
-├── 📄 main.go              # Application entry point
+├── 📄 main.go              # Application entry point and server setup
 ├── 📄 go.mod               # Go module dependencies
 ├── 📄 go.sum               # Go module checksums
-└── 📄 README.md            # This file
+├── 📄 integration_test.go  # Integration tests
+├── 📄 Dockerfile           # Docker container configuration
+├── 📄 docker-compose.yml   # Docker Compose setup
+├── 📄 Makefile             # Build automation
+├── 📄 .air.toml            # Live reload configuration
+├── 📄 .env                 # Environment variables
+└── 📄 init-mongo.js        # MongoDB initialization script
 ```
 
 ## 🚀 Quick Start
@@ -57,43 +64,44 @@ todo-golang/
 
 Make sure you have the following installed on your system:
 
-- **Go** (version 1.17 or higher) - [Download Go](https://golang.org/dl/)
-- **MongoDB** (version 4.0 or higher) - [Install MongoDB](https://docs.mongodb.com/manual/installation/)
+- **Docker** (includes Docker Compose) - [Install Docker](https://docs.docker.com/get-docker/)
 - **Git** - [Install Git](https://git-scm.com/downloads)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/victor-code19/todo-golang.git
+   git clone <your-repository-url>
    cd todo-golang
    ```
 
-2. **Install dependencies**
+2. **Start the application with Docker Compose**
    ```bash
-   go mod download
+   docker-compose up --build
    ```
 
-3. **Start MongoDB service**
-   ```bash
-   # On Linux/macOS
-   sudo systemctl start mongod
-   
-   # On macOS with Homebrew
-   brew services start mongodb-community
-   
-   # On Windows
-   net start MongoDB
-   ```
-
-4. **Run the application**
-   ```bash
-   go run main.go
-   ```
-
-5. **Access the application**
+3. **Access the application**
    - **Web Interface**: http://localhost:8080/view/tasks
    - **API Base URL**: http://localhost:8080/api
+
+### Docker Commands
+
+```bash
+# Build and start all services
+docker-compose up --build
+
+# Run in background (detached mode)
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild and restart
+docker-compose down && docker-compose up --build
+```
 
 ## 📖 API Documentation
 
@@ -109,7 +117,7 @@ http://localhost:8080/api
 | `GET` | `/tasks` | Retrieve all tasks | - | Array of tasks |
 | `POST` | `/task` | Create a new task | `{"description": "string"}` | Created task object |
 | `DELETE` | `/task/:id` | Delete specific task | - | Success message |
-| `DELETE` | `/tasks` | Delete all tasks | - | Success message |
+| `DELETE` | `/tasks` | Delete all tasks | - | Success message with count |
 
 ### Web Interface
 
@@ -126,17 +134,74 @@ curl -X POST http://localhost:8080/api/task \
   -d '{"description": "Learn Go programming"}'
 ```
 
+**Response:**
+```json
+{
+  "id": "507f1f77bcf86cd799439011",
+  "description": "Learn Go programming"
+}
+```
+
 #### Get All Tasks
 ```bash
 curl http://localhost:8080/api/tasks
 ```
 
-#### Delete a Task
-```bash
-curl -X DELETE http://localhost:8080/api/task/{task-id}
+**Response:**
+```json
+[
+  {
+    "id": "507f1f77bcf86cd799439011",
+    "description": "Learn Go programming"
+  },
+  {
+    "id": "507f1f77bcf86cd799439012", 
+    "description": "Build a REST API"
+  }
+]
 ```
 
-## 🧪 Testing the Application
+#### Delete a Task
+```bash
+curl -X DELETE http://localhost:8080/api/task/507f1f77bcf86cd799439011
+```
+
+**Response:**
+```json
+{
+  "message": "Task deleted successfully"
+}
+```
+
+#### Delete All Tasks
+```bash
+curl -X DELETE http://localhost:8080/api/tasks
+```
+
+**Response:**
+```json
+{
+  "message": "All tasks deleted successfully",
+  "deletedCount": 5
+}
+```
+
+## 🧪 Testing
+
+### Run Unit Tests
+```bash
+go test ./...
+```
+
+### Run Integration Tests
+```bash
+go test -tags=integration
+```
+
+### Test Coverage
+```bash
+go test -cover ./...
+```
 
 ### Using the Web Interface
 1. Navigate to http://localhost:8080/view/tasks
@@ -144,45 +209,39 @@ curl -X DELETE http://localhost:8080/api/task/{task-id}
 3. Delete individual tasks using the trash icon
 4. Clear all tasks using the "Clear all" button
 
-### Using API with curl
-```bash
-# Test API endpoints
-./test-api.sh  # (create this script for automated testing)
-```
-
 ## 🛠️ Technology Stack
 
 ### Backend
-- **[Go](https://golang.org/)** - Modern programming language
+- **[Go](https://golang.org/)** (v1.25) - Modern programming language
 - **[Gin](https://gin-gonic.com/)** - HTTP web framework
 - **[MongoDB](https://www.mongodb.com/)** - NoSQL database
-- **[mgo](https://github.com/go-mgo/mgo)** - MongoDB driver for Go
+- **[MongoDB Go Driver](https://go.mongodb.org/mongo-driver/)** (v2.3.0) - Official MongoDB driver
 
 ### Frontend
-- **HTML5** - Semantic markup
+- **HTML5** - Semantic markup with Go templates
 - **CSS3** - Modern styling with Flexbox
-- **Vanilla JavaScript** - Interactive functionality
+- **Vanilla JavaScript** - Interactive functionality with Fetch API
 - **[Font Awesome](https://fontawesome.com/)** - Icon library
+
+### Development Tools
+- **[Air](https://github.com/cosmtrek/air)** - Live reload for Go apps
+- **Docker** - Containerization
+- **Make** - Build automation
 
 ## 🔧 Configuration
 
+### Environment Variables
+- `MONGODB_URI` - MongoDB connection string (default: detected from environment)
+
 ### Database Configuration
-The application connects to MongoDB on the default port:
-```go
-mongodb://127.0.0.1:27017
-```
+- **Database**: `todo-app-go`
+- **Collection**: `tasks` 
+- **Connection Timeout**: 5 seconds
 
 ### Database Schema
-- **Database**: `todo-app-go`
-- **Collection**: `tasks`
-- **Document Structure**:
-  ```json
-  {
-    "_id": "ObjectId",
-    "description": "string"
-  }
-  ```
-
-## 🎥 Demo
-
-Check out the application in action: [YouTube Demo](https://youtu.be/8Tl3OFXLrAo)
+```json
+{
+  "_id": "ObjectId",
+  "description": "string"
+}
+```
