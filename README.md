@@ -221,7 +221,6 @@ go test -cover ./...
 - **HTML5** - Semantic markup with Go templates
 - **CSS3** - Modern styling with Flexbox
 - **Vanilla JavaScript** - Interactive functionality with Fetch API
-- **[Font Awesome](https://fontawesome.com/)** - Icon library
 
 ### Development Tools
 - **[Air](https://github.com/cosmtrek/air)** - Live reload for Go apps
@@ -232,11 +231,6 @@ go test -cover ./...
 
 ### Environment Variables
 - `MONGODB_URI` - MongoDB connection string (default: detected from environment)
-
-### Database Configuration
-- **Database**: `todo-app-go`
-- **Collection**: `tasks` 
-- **Connection Timeout**: 5 seconds
 
 ### Database Schema
 ```json
