@@ -8,8 +8,8 @@ services:
       - "8080:8080"
     volumes:
       - .:/app
-    env_file:
-      - .env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
     depends_on:
       - mongodb
     networks:
